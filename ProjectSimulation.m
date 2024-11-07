@@ -1,6 +1,11 @@
 %% Load the audio file
+clc; clearvars;
 % Read the original audio file to be processed
-[original_audio, sample_rate] = audioread('handel_J.wav');
+[original_audio, sample_rate] = audioread('gettysburg10.wav');
+
+plotAudioSpectra(original_audio, sample_rate, "Original Audio");
+plotTimeDomain(original_audio, sample_rate, "Original Audio")
+plotMagnitudePhase(original_audio, sample_rate, "Original Audio")
 
 %% Add Noise to Original File
 
@@ -17,6 +22,11 @@ end
 
 % Combine noise with the original audio signal
 noisy_audio = original_audio + noise_signal;
+
+% Plot Time Domain
+plotTimeDomain(noisy_audio, sample_rate, "Noisy Audio")
+plotMagnitudePhase(noisy_audio, sample_rate, "Noisy Audio")
+plotAudioSpectra(noisy_audio, sample_rate, "Noisy Audio")
 
 % Save the noisy audio to a file
 audiowrite('NoisyAudio.wav', noisy_audio, sample_rate);
@@ -49,25 +59,26 @@ noisy_audio_fft = fftshift(fft(noisy_audio)) / L;
 frequency_vector = -sample_rate/2:sample_rate/L:sample_rate/2 - sample_rate/L;
 
 %% A: Plot magnitude and phase response of audio file
-figure
-subplot(211);
-plot(frequency_vector, abs(noisy_audio_fft));
-ylabel('Magnitude Response')
-xlabel('Hz')
-
-% Plot phase response
-subplot(212);
-plot(frequency_vector, unwrap(angle(noisy_audio_fft))); 
-ylabel('Phase Response')
-xlabel('Hz')
+% figure
+% title("Frequency Domain of Noisy Audio")
+% subplot(211);
+% plot(frequency_vector, abs(noisy_audio_fft));
+% title('Magnitude Response')
+% xlabel('Hz')
+% 
+% % Plot phase response
+% subplot(212);
+% plot(frequency_vector, unwrap(angle(noisy_audio_fft))); 
+% title('Phase Response')
+% xlabel('Hz')
 
 %% B: Determine Spectral location associated with noise
-[~, noise_peaks] = findpeaks(abs(noisy_audio_fft((length(noisy_audio_fft)+1)/2:end)), frequency_vector((length(noisy_audio_fft)+1)/2:end), 'MinPeakHeight', 0.01);
+[notused, noise_peaks] = findpeaks(abs(noisy_audio_fft((length(noisy_audio_fft)+1)/2:end)), frequency_vector((length(noisy_audio_fft)+1)/2:end), 'MinPeakHeight', 0.01);
 
-disp("Frequencies of Noise (Hz):")
-disp(noise_peaks);
-disp("Discrete Normalized Frequencies of Noise:")
-disp(noise_peaks / sample_rate);
+% disp("Frequencies of Noise (Hz):")
+% disp(noise_peaks);
+% disp("Discrete Normalized Frequencies of Noise:")
+% disp(noise_peaks / sample_rate);
 
 %% C: Design an FIR filter to remove noise
 syms z
@@ -79,10 +90,11 @@ fir_coefficients = sym2poly(fir_numerator);
 
 % Display FIR filter properties
 plotMagnitude(fir_coefficients, 1, "FIR Filter");
-plotPoleZero(fir_coefficients, 1, "FIR Filter");
+%plotPoleZero(fir_coefficients, 1, "FIR Filter");
 
 % Apply FIR filter
 filtered_fir_audio = filter(fir_coefficients, 1, noisy_audio);
+
 
 % %% D: Design an IIR filter with radius_1
 % iir_denom_1 = 1;
@@ -107,7 +119,7 @@ iir_coefficients_2 = sym2poly(iir_denom_2);
 
 % Display IIR filter properties (radius = 0.95)
 plotMagnitude(fir_coefficients, iir_coefficients_2, "IIR Filter with r = 0.95");
-plotPoleZero(fir_coefficients, iir_coefficients_2, "IIR Filter with r = 0.95");
+% plotPoleZero(fir_coefficients, iir_coefficients_2, "IIR Filter with r = 0.95");
 
 % Apply IIR filter with radius_2
 filtered_iir_audio_2 = filter(fir_coefficients, iir_coefficients_2, noisy_audio);
@@ -116,6 +128,86 @@ filtered_iir_audio_2 = filter(fir_coefficients, iir_coefficients_2, noisy_audio)
 audiowrite("FIRaudio_filtered.wav", filtered_fir_audio / max(abs(filtered_fir_audio(:))) * 0.5, sample_rate)
 % audiowrite("IIR1audio_filtered.wav", filtered_iir_audio_1 / max(abs(filtered_iir_audio_1(:))) * 0.5, sample_rate)
 audiowrite("IIR2audio_filtered.wav", filtered_iir_audio_2 / max(abs(filtered_iir_audio_2(:))) * 0.5, sample_rate)
+
+% Plot Time 
+plotTimeDomain(filtered_fir_audio / max(abs(filtered_fir_audio(:))) * 0.5, sample_rate, "FIR Filter")
+plotTimeDomain(filtered_iir_audio_2 / max(abs(filtered_iir_audio_2(:)))* 0.5, sample_rate, "IIR Filter")
+% Plot Spectrogram 
+plotAudioSpectra(filtered_fir_audio / max(abs(filtered_fir_audio(:))) * 0.5, sample_rate, "FIR Filter")
+plotAudioSpectra(filtered_iir_audio_2 / max(abs(filtered_iir_audio_2(:)))* 0.5, sample_rate, "IIR Filter")
+
+function plotAudioSpectra(audio, sample_rate, str)
+
+    % Compute the Fourier Transform of the audio signal
+    audio_fft = fft(audio);
+
+    % Number of samples
+    n = length(audio);
+
+    % Frequency vector for plotting, up to the Nyquist frequency
+    f = (0:n/2-1) * (sample_rate / n);  % Frequency vector (in Hz)
+
+    % Compute magnitude and phase (only up to Nyquist frequency)
+    magnitude = abs(audio_fft(1:n/2));   % Magnitude of the Fourier Transform
+    phase = angle(audio_fft(1:n/2));     % Phase of the Fourier Transform
+
+    % Plot the magnitude spectrum
+    figure;
+    spectrogram(audio, 256, 200, 256, sample_rate, 'yaxis');  % Adjust parameters as needed
+    title(['Spectrogram of ', str]);
+    xlabel('Time (s)');
+    ylabel('Frequency (Hz)');
+    colorbar;
+end
+
+
+function plotMagnitudePhase(audio, sample_rate, str)
+
+    % Compute the Fourier Transform of the audio signal
+    audio_fft = fft(audio);
+
+    % Number of samples
+    n = length(audio);
+
+    % Frequency vector for plotting, up to the Nyquist frequency
+    f = (0:n/2-1) * (sample_rate / n);  % Frequency vector (in Hz)
+
+    % Compute magnitude and phase (only up to Nyquist frequency)
+    magnitude = abs(audio_fft(1:n/2));   % Magnitude of the Fourier Transform
+    phase = angle(audio_fft(1:n/2));     % Phase of the Fourier Transform
+
+    % Plot the magnitude spectrum
+    figure;
+    % subplot(2, 1, 1);
+    plot(f, magnitude);
+    title('Magnitude Spectrum of '+str);
+    xlabel('Frequency (Hz)');
+    ylabel('Magnitude');
+    grid on;
+
+    % Plot the phase spectrum
+    % subplot(2, 1, 2);
+    % plot(f, phase);
+    % title('Phase Spectrum of '+str);
+    % xlabel('Frequency (Hz)');
+    % ylabel('Phase (radians)');
+    % grid on;
+end
+
+
+
+function plotTimeDomain(original_audio, sample_rate, str)
+    % Get the time vector based on the sample rate and length of the audio
+    time = (0:length(original_audio) - 1) / sample_rate;
+    
+    % Plot the audio signal in the time domain
+    figure;
+    plot(time, original_audio);
+    title('Time Domain of '+str);
+    xlabel('Time (s)');
+    ylabel('Amplitude');
+    grid on;
+end
 
 
 
