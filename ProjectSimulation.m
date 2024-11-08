@@ -1,7 +1,7 @@
 %% Load the audio file
 clc; clearvars;
 % Read the original audio file to be processed
-[original_audio, sample_rate] = audioread('gettysburg10.wav');
+[original_audio, sample_rate] = audioread('handel_J.wav');
 
 plotAudioSpectra(original_audio, sample_rate, "Original Audio");
 plotTimeDomain(original_audio, sample_rate, "Original Audio")
