@@ -1,6 +1,8 @@
-# LBYCPA4-FINALPROJECT
-![image](https://github.com/user-attachments/assets/516fefcf-f24c-436b-b0de-7d46450e0c5f)
-![image](https://github.com/user-attachments/assets/5438c996-aed5-4f23-ba9d-8ce38dfd005f)
+# High Frequency Noise Removal using FIR and IIR Filters
+![image](https://github.com/user-attachments/assets/6bb8965b-8f15-43e2-af0a-33f24e8978c2)
+
+![image](https://github.com/user-attachments/assets/6a34f845-45fc-44af-903b-7650b207310e)
+
 ## TODO LIST
 - Add the Description with Information about the Noise etc
 ## Requirements
